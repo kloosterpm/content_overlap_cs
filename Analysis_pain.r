@@ -13,6 +13,7 @@ library('psych')
 library('ade4')
 library('viridis')
 library('geomtextpath')
+library('dplyr')
 
 
 ##### Data preparation
@@ -70,11 +71,15 @@ M[3,]<-CSI.v
 M[4,]<-CAP_Knee.v
 M[5,]<-painDETECT.v
 isSymmetric(M)
-
 M
+
+
+
 M[M == 1] <- 0 # replace diagonal with 0
 colMeans(M)
 mean(colMeans(M)) # 0.11, is underestimation, see Fried (2018)
+
+
 
 # Correct mean overlap 
 x <- colMeans(M)
@@ -102,6 +107,21 @@ d = d[Type>=1] #Keep the scales in which the symptoms are 1 (present) or 2 (incl
 d[, Type := factor(Type, labels=c("Hypothetical symptom", "Actual symptom"))]
 d[, count := .N, by=S]
 
+
+# Add a column with with the higher order categories.
+d <- d %>% 
+  mutate(category = case_when(
+    S %in% c('S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7') ~ 'Nociplastic pain manifestations',
+    S %in% c('S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19',
+             'S20', 'S21', 'S22', 'S23', 'S24', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30',
+             'S31', 'S32', 'S33') ~ 'Psychosomatic symptoms',
+    S == 'S34' ~ 'Pain location',
+    S == 'S35' ~ 'Pain course',
+    S %in% c('S36', 'S37', 'S38', 'S39') ~ 'Neuropathic pain descriptors',
+    TRUE ~ NA_character_ # for any other case not covered above
+  ))
+
+
 # Symptom order
 sympt.order = d[, .N, by=S][order(N)][, S] #Replace by order
 d[, S := factor(S, levels = sympt.order)]
@@ -110,6 +130,54 @@ d[, S := factor(S, levels = sympt.order)]
 scale.order = d[, .N, by=Scales][order(N)][, Scales]
 d[, Scales := factor(Scales, levels = scale.order)]
 d[, Scales2 := as.numeric(Scales)]
+
+
+
+
+# Reordering the d dataframe for the flower plot
+
+# First, convert 'S' and 'Scales' to character to avoid factor issues
+d[, S := as.character(S)]
+d[, Scales := as.character(Scales)]
+d[, category := as.character(category)] # Make sure category is also character
+
+# Create a combined key of 'category' and 'S' to ensure uniqueness
+d[, combined_key := paste(category, S, sep = "_")]
+
+# Order the combined keys by their frequency
+combined_order <- d[, .N, by = combined_key][order(-N), combined_key]
+
+# Assign the ordered combined keys as factor levels to 'S'
+d[, S := factor(combined_key, levels = combined_order)]
+
+# Separate the 'S' and 'category' again
+d[, c("category", "S") := tstrsplit(S, "_", fixed = TRUE)]
+# Convert 'S' back to factor with the levels in the order of appearance
+d[, S := factor(S, levels = unique(S))]
+
+# Do the same for 'Scales'
+d[, combined_key := paste(category, Scales, sep = "_")]
+combined_scale_order <- d[, .N, by = combined_key][order(-N), combined_key]
+d[, Scales := factor(combined_key, levels = combined_scale_order)]
+d[, Scales := tstrsplit(Scales, "_", fixed = TRUE)[[2]]]
+d[, Scales := factor(Scales, levels = unique(Scales))]
+
+# Create a numeric representation of 'Scales'
+d[, Scales2 := as.numeric(Scales)]
+
+# Now remove the temporary 'combined_key'
+d[, combined_key := NULL]
+
+# Check the result
+View(d)
+
+
+
+
+
+
+
+
 
 # Plot
 pal1 <- c("#D55E00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")
@@ -121,7 +189,7 @@ pal1 <- c("#D55E00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")
 new_labels <- c("GPQ" = "GPQ",
                 "PSQ" = "PSQ",
                 "CSI" = "CSI", 
-                "CAP_Knee" = "CAP-Knee", 
+                "CAP" = "CAP-Knee", 
                 "painDETECT" = "painDETECT")
 
 
@@ -133,7 +201,7 @@ plot_flower <- ggplot(d, aes(x=S, y=Scales2, group=S, color=as.factor(Scales),
   geom_hline(yintercept = 1:5, colour = "grey80", size = .2) +
   geom_vline(xintercept = 1:39, colour = "grey80", size = .2) +
   geom_line(colour="grey60") +
-  geom_point(size=3.5, fill="white", stroke=1.5) + # Increase stroke width
+  geom_point(size=2.8, fill="white", stroke=1.5) + # Increase stroke width
   geom_rect(xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=.6, fill="white", color=NA) +
   coord_curvedpolar() +
   scale_shape_manual(values=c(21,19)) +
@@ -154,9 +222,11 @@ plot_flower <- ggplot(d, aes(x=S, y=Scales2, group=S, color=as.factor(Scales),
 
 plot_flower
 
-ggsave(plot=plot_flower,filename="Figure1.pdf", width=7, height=7, useDingbats=FALSE)
-# Figure 1 was further adjusted in GIMP (e.g., item legend)
+ggsave(plot=plot_flower,filename="Figure1.pdf", width=7, height=6, useDingbats=FALSE)
+# Figure 1 was further adjusted in Inkscape (e.g., item legend)
 
 
+
+ggsave("plot.tiff", width = 2187, height = 1351, units = "px", dpi=300)
 
 
