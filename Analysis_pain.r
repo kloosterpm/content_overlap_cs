@@ -4,6 +4,8 @@
 #####                                                                             #### 
 ######################################################################################
 
+setwd("M:/Documents/2023_Content_Pain_Sensitization/R_code_pain")
+
 
 library('qgraph')
 library('ggplot2')
@@ -180,9 +182,8 @@ View(d)
 
 
 # Plot
-pal1 <- c("#D55E00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")
-# pal2 <- viridis(7)
-# pal3 <- c("#e41a1c","#377eb8","#4daf4a","#984ea3","#ff7f00")
+pal1 <- c("#D55E00", "#56B4E9", "#009E73", "#F0E442", "#CC79A7")
+
 
 
 # Create a named vector for new labels
