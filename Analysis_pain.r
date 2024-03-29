@@ -97,8 +97,50 @@ mean(x) # 0.14 without the diagonal, which is correct
 length1<-c(7,17,25,8,10) # length of original questionnaires; e.g. PSQ 17 items originally
 length2<-c(7,3,25,8,10) # items in analysis per scale; PSQ captures 3 items
 
-cor(length1, colMeans(M)) # -0.70
-cor(length2, colMeans(M)) # -0.89
+cor(length1, colMeans(M)) # -0.62
+cor(length2, colMeans(M)) # -0.84
+
+
+
+##### Compute mean symptom appearance across questionnaires
+# Sum across rows to get the number of "1" occurrences per row
+row_sums = rowSums(data)
+
+# Calculate the mean number of "1" occurrences
+mean_ones = mean(row_sums)
+# Calculate the median number of "1" occurrences
+median_ones = median(row_sums)
+# Calculate the mode number of "1" occurrences
+mode_ones = mode(row_sums)
+
+# Function to calculate mode
+getMode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+# Sum across rows to get the number of occurrences per row
+row_sums = rowSums(data)
+# Calculate the mode of the number of occurrences
+mode_ones = getMode(row_sums)
+
+# Print the results
+print(paste("Mean number of appearances: ", mean_ones))
+print(paste("Median number of appearances: ", median_ones))
+print(paste("Mode number of appearances: ", mode_ones))
+
+
+# Generate frequency table
+freq_table <- table(row_sums)
+# Calculate percentages
+percentages <- prop.table(freq_table) * 100
+# Combine frequencies and percentages in a data frame for better readability
+freq_table_df <- data.frame(Number_of_1s = names(freq_table), Frequency = freq_table, Percentage = percentages)
+
+# Print the frequency table with percentages
+print(freq_table_df)
+
+
 
 ##### Figure 1 
 set.seed(223)
